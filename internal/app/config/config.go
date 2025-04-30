@@ -18,7 +18,7 @@ type Config struct {
 
 func Read() (Config, error) {
 	config := Config{
-		HttpServerPort: getEnvIntOrDefault("HTTP_SERVER_PORT", defaultHttpServerPort),
+		HttpServerPort: getEnvIntOrDefault("PORT", defaultHttpServerPort),
 		PackageSizes:   getEnvIntSliceOrDefault("PACKAGE_SIZES", defaultPackageSizes),
 	}
 
