@@ -42,33 +42,37 @@ func NewApp() (*App, error) {
 }
 
 func (a *App) Run() error {
+    ctx, cancel := context.WithCancel(context.Background())
+    defer cancel()
+    
+    errChan := make(chan error, 1)
+    
+    shutdown := make(chan os.Signal, 1)
+    signal.Notify(shutdown, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	done := make(chan os.Signal, 1)
-	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
+    go func() {
+        fmt.Println("package app starting on port", a.server.Port())
+        if err := a.server.Start(); err != nil && err != http.ErrServerClosed {
+            errChan <- err
+        }
+    }()
 
-	go func() {
-		if err := a.server.Start(); err != nil && err != http.ErrServerClosed {
-			log.Printf("server error: %v", err)
-			done <- syscall.SIGTERM
-		}
-	}()
+    select {
+    case err := <-errChan:
+        return fmt.Errorf("server error: %w", err)
+    case sig := <-shutdown:
+        fmt.Printf("shutdown signal received: %v\n", sig)
+    }
 
-	fmt.Println("package app started")
+    shutdownCtx, shutdownCancel := context.WithTimeout(ctx, 30*time.Second)
+    defer shutdownCancel()
 
-	<-done
+    if err := a.Shutdown(shutdownCtx); err != nil {
+        return fmt.Errorf("server shutdown: %w", err)
+    }
 
-	shutdownCtx, shutdownCancel := context.WithTimeout(ctx, 30*time.Second)
-	defer shutdownCancel()
-
-	if err := a.Shutdown(shutdownCtx); err != nil {
-		return fmt.Errorf("server shutdown: %w", err)
-	}
-
-	fmt.Println("package app gracefully stopped")
-
-	return nil
+    fmt.Println("package app gracefully stopped")
+    return nil
 }
 
 func (a *App) Shutdown(ctx context.Context) error {
