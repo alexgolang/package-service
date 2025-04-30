@@ -12,6 +12,17 @@ A Go-based microservice that calculates optimal package sizes for given target q
 - Comprehensive test coverage
 - Makefile for easy development and deployment
 
+## Live Demo
+
+The service is deployed and available at:
+```bash
+https://package-service.onrender.com
+
+Use postman/curl with 'size' query param
+
+e.g. https://package-service.onrender.com/package?size=250
+```
+
 ## Prerequisites
 
 - Go 1.24 or higher
