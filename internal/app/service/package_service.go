@@ -2,7 +2,17 @@ package service
 
 import (
 	"context"
+	"errors"
 	"math"
+)
+
+const (
+    MinSize = 1
+)
+
+var (
+	ErrNoPackageSizes = errors.New("no package sizes provided")
+	ErrInvalidSize = errors.New("size must be larger than 0")
 )
 
 type Logger interface {
@@ -15,15 +25,22 @@ type PackageService struct {
 	logger Logger
 }
 
-func NewPackageService(packageSizes []int, logger Logger) *PackageService {
-	return &PackageService{packageSizes: packageSizes, logger: logger}
+func NewPackageService(packageSizes []int, logger Logger) (*PackageService, error) {
+    if len(packageSizes) == 0 {
+        logger.Println("no package sizes provided")
+        return nil, ErrNoPackageSizes
+    }
+	return &PackageService{packageSizes: packageSizes, logger: logger}, nil
 }
 
-func (s *PackageService) GetPackageSize(ctx context.Context, target int) map[int]int {
-	s.logger.Printf("GetPackageSize %d", target)
-	result := getSize(target, s.packageSizes)
-	s.logger.Printf("result for %d is %v", target, result)
-	return result
+func (s *PackageService) GetPackageSize(ctx context.Context, size int) (map[int]int, error) {
+    if size < MinSize {
+        return nil, ErrInvalidSize
+    }
+	s.logger.Printf("GetPackageSize %d", size)
+	result := getSize(size, s.packageSizes)
+	s.logger.Printf("result for %d is %v", size, result)
+	return result, nil
 }
 
 func getSize(target int, packSizes []int) map[int]int {

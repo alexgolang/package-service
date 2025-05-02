@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/alexgolang/package-task/internal/app/config"
-	service "github.com/alexgolang/package-task/internal/app/services"
+	service "github.com/alexgolang/package-task/internal/app/service"
 	"github.com/alexgolang/package-task/internal/app/transport/httpserver"
 	"github.com/alexgolang/package-task/internal/app/transport/httpserver/handlers"
 )
@@ -30,7 +30,10 @@ func NewApp() (*App, error) {
 
 	logger := log.New(os.Stdout, "PACKAGE_APP: ", log.Ldate|log.Ltime|log.Lshortfile)
 
-	packageService := service.NewPackageService(appCfg.PackageSizes, logger)
+	packageService, err := service.NewPackageService(appCfg.PackageSizes, logger)
+	if err != nil {
+		return nil, fmt.Errorf("create package service: %w", err)
+	}
 	handler := handlers.NewPackageHandler(packageService, logger)
 	server := httpserver.NewServer(handler, appCfg.HttpServerPort)
 

@@ -2,10 +2,12 @@ package handlers
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"strconv"
 
 	"github.com/alexgolang/package-task/internal/app/common/server"
+	"github.com/alexgolang/package-task/internal/app/service"
 )
 
 type Logger interface {
@@ -13,7 +15,7 @@ type Logger interface {
 }
 
 type PackageService interface {
-	GetPackageSize(ctx context.Context, target int) map[int]int
+	GetPackageSize(ctx context.Context, target int) (map[int]int, error)
 }
 
 type PackageHandler struct {
@@ -44,7 +46,15 @@ func (h *PackageHandler) GetPackage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result := h.packageService.GetPackageSize(r.Context(), packageSizeInt)
+	result, err := h.packageService.GetPackageSize(r.Context(), packageSizeInt)
+	if err != nil {
+		if errors.Is(err, service.ErrInvalidSize) {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+		} else {
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+		}
+		return
+	}
 
 	server.RespondOK(result, w, r)
 }
